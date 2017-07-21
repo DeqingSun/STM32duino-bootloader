@@ -42,27 +42,33 @@ int main()
     setupLEDAndButton();
     setupUSB();
     setupFLASH();
-	
 
-	strobePin(LED_BANK, LED_PIN, STARTUP_BLINKS, BLINK_FAST,LED_ON_STATE);
+	bool skipDFU = 1;
+	int rcc_csr_value=GET_REG(RCC_CSR);
+	if ((rcc_csr_value & (0xFC000000))!=0x0C000000) skipDFU=0;	//use dfu if not power on RST
+	/* Set RMVF bit to clear the reset flags */
+	SET_REG(RCC_CSR,rcc_csr_value|(1<<24));
+	if (!checkUserCode(USER_CODE_FLASH0X8002000) && !checkUserCode(USER_CODE_FLASH0X8005000)) skipDFU=0;
 
+	if (!skipDFU){
+		strobePin(LED_BANK, LED_PIN, STARTUP_BLINKS, BLINK_FAST,LED_ON_STATE);
 
-	/* wait for host to upload program or halt bootloader */
-	bool no_user_jump = (!checkUserCode(USER_CODE_FLASH0X8005000) && !checkUserCode(USER_CODE_FLASH0X8002000)) || readButtonState() ;
-	
-	int delay_count = 0;
+		/* wait for host to upload program or halt bootloader */
+		bool no_user_jump = (!checkUserCode(USER_CODE_FLASH0X8005000) && !checkUserCode(USER_CODE_FLASH0X8002000)) || readButtonState() ;
 
-    while ((delay_count++ < BOOTLOADER_WAIT) || no_user_jump)
-	{
+		int delay_count = 0;
 
-        strobePin(LED_BANK, LED_PIN, 1, BLINK_SLOW,LED_ON_STATE);
-
-        if (dfuUploadStarted()) 
+		while ((delay_count++ < BOOTLOADER_WAIT) || no_user_jump)
 		{
-            dfuFinishUpload(); // systemHardReset from DFU once done
-        }
-    }
 
+			strobePin(LED_BANK, LED_PIN, 1, BLINK_SLOW,LED_ON_STATE);
+
+			if (dfuUploadStarted()) 
+			{
+				dfuFinishUpload(); // systemHardReset from DFU once done
+			}
+		}
+	}
 
 	if (checkUserCode(USER_CODE_FLASH0X8002000)) 
 	{
