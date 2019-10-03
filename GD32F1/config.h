@@ -126,7 +126,7 @@
 #endif
 
 #define STARTUP_BLINKS 5
-#define BOOTLOADER_WAIT 6
+#define BOOTLOADER_WAIT 60
 
 // defines for USB (DONT CHANGE)
 #define VEND_ID0 0xAF
